@@ -60,7 +60,7 @@ var graph_transforms;
 var graph_vert_list;
 var graph_edge_list;
 
-var depth = 5;
+var depth = 4;
 
 var buttons = [
     {x: 1, y: 1, w: 150, h: 50, name: "Draw Graph", active: true, pressed: false, press: () => {
@@ -304,6 +304,7 @@ export function mouse_release(event, time) {
                 let dy = bwTree[drag].y - v.y;
                 if (drag > 0 && v.next.indexOf(drag) >= 0 && dx * dx + dy * dy < 14 * 14) {
                     remove_from_tree(drag);
+                    drag = -1;
                     return;
                 } else if (dx * dx + dy * dy < 30 * 30) {
                     let dist = Math.sqrt(dx * dx + dy * dy);
