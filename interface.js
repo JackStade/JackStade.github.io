@@ -67,6 +67,8 @@ var buttons = [
         mode = 1;
         buttons[1].active = true;
         buttons[0].active = false;
+        buttons[2].active = false;
+        buttons[3].active = false;
         let tree = here.wasm_exports.get_bw_tree(bwTree.length);
         copy_tree(tree, bwTree[0], Math.PI);
         graph_ptr = here.wasm_exports.generate_graph(depth, tree);
@@ -84,7 +86,15 @@ var buttons = [
         mode = 0;
         buttons[1].active = false;
         buttons[0].active = true;
+        buttons[2].active = true;
+        buttons[3].active = true;
         here.wasm_exports.delete_graph(graph_ptr);
+    }},
+    {x: 280, y: 1, w: 35, h: 25, name: "∧", active: true, pressed: false, press: () => {
+        depth += 1;
+    }},
+    {x: 280, y: 26, w: 35, h: 25, name: "∨", active: true, pressed: false, press: () => {
+        depth -= 1;
     }}
 ];
 
@@ -146,6 +156,14 @@ function transform(x, y) {
 export function draw(ctx) {
     ctx.fillStyle = "#FFFFFF";
     ctx.strokeStyle = "#000000";
+
+    if (depth < 1) {
+        depth = 1;
+    }
+
+    while (bwTree.length ** depth >= 2 ** 20) {
+        depth -= 1;
+    }
     
     ctx.fillRect(0, 0, width, height);
     if (mode == 0) {
@@ -196,9 +214,11 @@ export function draw(ctx) {
             let x = graph_vert_list[2 * i];
             let y = graph_vert_list[2 * i + 1];
             let p = transform(x, y);
-            ctx.beginPath();
-            ctx.arc(p.x, p.y, 2, 0, 2 * Math.PI);
-            ctx.fill();
+            if (p.x >= 0 && p.y >= 0 && p.x <= width && p.y <= height) {
+                ctx.beginPath();
+                ctx.arc(p.x, p.y, 2, 0, 2 * Math.PI);
+                ctx.fill();
+            }
         }
         ctx.lineWidth = 2;
         for (var i = 0;i<graph_verts;i += 1) {
@@ -211,10 +231,18 @@ export function draw(ctx) {
                 let ox = graph_vert_list[2 * other];
                 let oy = graph_vert_list[2 * other + 1];
                 let op = transform(ox, oy);
-                ctx.beginPath();
-                ctx.moveTo(p.x, p.y);
-                ctx.lineTo(op.x, op.y);
-                ctx.stroke();
+                let dx = (p.x - op.x);
+                let dy = (p.y - op.y);
+                if (dx * dx + dy * dy >= 3 * 3) {
+                    if ((op.x >= 0 || p.x >= 0) && (op.y >= 0 || p.y >= 0)) {
+                        if ((op.x <= width || p.x <= width) && (op.y <= height || p.y <= height)) {
+                            ctx.beginPath();
+                            ctx.moveTo(p.x, p.y);
+                            ctx.lineTo(op.x, op.y);
+                            ctx.stroke();
+                        }
+                    }
+                }
             }
         }
     }
@@ -222,6 +250,11 @@ export function draw(ctx) {
     ctx.font = "20px Arial";
     ctx.lineWidth = 2;
     ctx.strokeStyle = "#000000";
+    ctx.fillStyle = "#000000";
+
+    if (mode == 0) {
+        ctx.fillText("Depth: " + depth, 170, 31);
+    }
 
     for (let b of buttons) {
         if (b.active) {
@@ -238,7 +271,7 @@ export function draw(ctx) {
             ctx.fillRect(b.x, b.y, b.w, b.h);
             ctx.strokeRect(b.x, b.y, b.w, b.h);
             ctx.fillStyle = "#000000";
-            ctx.fillText(b.name, b.x + 10, b.y + 30);
+            ctx.fillText(b.name, b.x + 10, b.y + b.h / 2 + 5);
         }
     }
 }
@@ -327,7 +360,6 @@ function remove_from_tree(idx) {
     }
 
     let v = o.index;
-    console.log(idx, v);
 
     bwTree.splice(v, 1);
     for (var i = 0;i<bwTree.length;i += 1) {
@@ -380,7 +412,6 @@ export function mouse_wheel(event, time) {
     } else {
         factor = 2 ** -event.deltaY;
     }
-    console.log(factor, event.deltaY);
     transform_scale *= factor;
     let dx = mouseX - transform_origin_x;
     let dy = mouseY - transform_origin_y;
