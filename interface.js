@@ -58,6 +58,7 @@ var graph_edges;
 var graph_verts;
 var graph_transforms;
 var graph_vert_list;
+var graph_dir_list;
 var graph_edge_list;
 
 var depth = 4;
@@ -71,15 +72,16 @@ var buttons = [
         buttons[3].active = false;
         let tree = here.wasm_exports.get_bw_tree(bwTree.length);
         copy_tree(tree, bwTree[0], Math.PI);
-        graph_ptr = here.wasm_exports.generate_graph(depth, tree);
+        graph_ptr = here.wasm_exports.generate_graph(tree, 0, depth, 1);
         here.wasm_exports.delete_tree(tree);
         let graph_data = here.wasm_exports.get_graph_data(graph_ptr);
-        let view = new Uint32Array(here.wasm_exports.memory.buffer, graph_data, 4);
+        let view = new Uint32Array(here.wasm_exports.memory.buffer, graph_data, 5);
         graph_verts = view[0];
         graph_transforms = view[1];
         graph_edges = graph_verts * graph_transforms;
         graph_vert_list = new Float32Array(here.wasm_exports.memory.buffer, view[2], 2 * graph_verts);
-        graph_edge_list = new Uint32Array(here.wasm_exports.memory.buffer, view[3], graph_edges);
+        graph_dir_list = new Float32Array(here.wasm_exports.memory.buffer, view[3], 2 * graph_verts);
+        graph_edge_list = new Uint32Array(here.wasm_exports.memory.buffer, view[4], graph_edges);
         here.wasm_exports.delete_graph_data(graph_data);
     }},
     {x: 1, y: 1, w: 150, h: 50, name: "Back to Tree", active: false, pressed: false, press: () => {
@@ -194,6 +196,9 @@ export function draw(ctx) {
             if (dx * dx + dy * dy < 12 * 12) {
                 if (v.black) {
                     ctx.fillStyle = "#000000";
+                    if (v.index == 0) {
+                        ctx.fillStyle = "#001040";
+                    }
                 } else {
                     ctx.fillStyle = "#FFFFFF";
                 }
@@ -201,6 +206,9 @@ export function draw(ctx) {
                 v.grabbed = false;
                 if (v.black) {
                     ctx.fillStyle = "#404040";
+                    if (v.index == 0) {
+                        ctx.fillStyle = "#002880";
+                    }
                 } else {
                     ctx.fillStyle = "#E0E0E0";
                 }
